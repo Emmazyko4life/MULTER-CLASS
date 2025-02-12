@@ -9,7 +9,7 @@ exports.createUser = async (req, res) => {
         const file = req.file;
         // Create an instance of the document and save to the database
         const user = await userModel.create({
-            fullName, 
+            fullName,
             email,
             image: file.originalname
         });
@@ -19,12 +19,12 @@ exports.createUser = async (req, res) => {
             message: 'User create successfully',
             data: user
         })
-}
-catch (e) {
-    res.status(500).json({
-        message: 'Error creating user ' + e.message
-    })
-}
+    }
+    catch (e) {
+        res.status(500).json({
+            message: 'Error creating user ' + e.message
+        })
+    }
 };
 
 exports.getOneUser = async (req, res) => {
@@ -36,7 +36,7 @@ exports.getOneUser = async (req, res) => {
         // Check if the user Exists 
         if (!user) {
             return res.status(404).json({
-               message: 'User not found' 
+                message: 'User not found'
             })
         }
         // Send a success response
@@ -67,30 +67,61 @@ exports.update = async (req, res) => {
                 message: 'User not found',
             })
         }
-    const data = {
-        firstName, 
-        image: user.image
-    };
+        const data = {
+            firstName,
+            image: user.image
+        };
 
-    const oldFilepath = `./uploads/${user.image}`;
+        const oldFilepath = `./uploads/${user.image}`;
 
-    if (req.file && req.file.filename) {
-        if (fs.existsSync(oldFilepath)) {
-            fs.unlink(oldFilepath);
-            data.image = req.file.originalname
+        if (req.file && req.file.filename) {
+            if (fs.existsSync(oldFilepath)) {
+                fs.unlink(oldFilepath);
+                data.image = req.file.originalname
+            }
         }
+
+        const updatedUser = await userModel.findByIdAndupdate(id, data, { new: true });
+
+        res.status(200).json({
+            message: 'User has been updated  successfully',
+            data: updatedUser
+        })
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).json({
+            message: 'Internal server error'
+        })
     }
-
-    const updatedUser = await userModel.findByIdAndupdate(id, data, { new: true });
-
-    res.status(200).json({
-        message: 'User has been updated  successfully',
-        data: updatedUser
-    })
-} catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-        message: 'Internal server error'
-    })
-}
 };
+
+
+exports.delete = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await userModel.findById(id);
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found'
+            })
+        }
+
+        const oldFilePath = `./uploads/${user.image}`
+
+        const deleteUser = await userModel.findByIdAndDelete(id);
+
+        if (deleteUser) {
+            fs.unlinkSync(oldFilePath);
+        }
+
+        res.status(200).json({
+            message: 'User deleted successfully'
+        })
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).json({
+            message: 'Internal server error'
+        })
+    }
+}
